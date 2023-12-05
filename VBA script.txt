@@ -1,0 +1,106 @@
+Sub StockDataAnalysis()
+    ' Dim my variables
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim totalVolume As Double
+    Dim openingPrice As Double
+    Dim closingPrice As Double
+    Dim yearlyChange As Double
+    Dim percentChange As Double
+    Dim rowCount As Integer
+    Dim maxPercentIncrease As Double
+    Dim maxPercentDecrease As Double
+    Dim maxTotalVolume As Double
+    Dim maxPercentIncreaseTicker As String
+    Dim maxPercentDecreaseTicker As String
+    Dim maxTotalVolumeTicker As String
+
+
+    ' Iterate through all worksheets
+    For Each ws In ThisWorkbook.Sheets
+        
+        lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        rowCount = 2
+
+        ' Print headers
+        ws.Cells(1, 9).Value = "Ticker"
+        ws.Cells(1, 10).Value = "Yearly Change"
+        ws.Cells(1, 11).Value = "Percent Change"
+        ws.Cells(1, 12).Value = "Total Stock Volume"
+
+        ' Loop through rows
+        For i = 2 To lastRow
+            
+            If ws.Cells(i, 1).Value <> ws.Cells(i + 1, 1).Value Then
+                
+                closingPrice = ws.Cells(i, 6).Value
+
+                ' Calculate yearly change and percent change
+                yearlyChange = closingPrice - openingPrice
+                percentChange = IIf(openingPrice = 0, 0, yearlyChange / openingPrice)
+
+                ' Print results in the same worksheet
+                ws.Cells(rowCount, 9).Value = ws.Cells(i, 1).Value
+                ws.Cells(rowCount, 10).Value = yearlyChange
+                ws.Cells(rowCount, 11).Value = percentChange
+                ws.Cells(rowCount, 12).Value = totalVolume
+
+                ' Format percent change as percentage
+                ws.Cells(rowCount, 11).NumberFormat = "0.00%"
+
+                ' Highlight positive in green, negative in red
+                If yearlyChange > 0 Then
+                    ws.Cells(rowCount, 10).Interior.Color = RGB(0, 255, 0)
+                ElseIf yearlyChange < 0 Then
+                    ws.Cells(rowCount, 10).Interior.Color = RGB(255, 0, 0)
+                End If
+
+                ' Greatest % increase, decrease, total volume
+                If percentChange > maxPercentIncrease Then
+                    maxPercentIncrease = percentChange
+                    maxPercentIncreaseTicker = ws.Cells(i, 1).Value
+                End If
+
+                If percentChange < maxPercentDecrease Then
+                    maxPercentDecrease = percentChange
+                    maxPercentDecreaseTicker = ws.Cells(i, 1).Value
+                End If
+
+                If totalVolume > maxTotalVolume Then
+                    maxTotalVolume = totalVolume
+                    maxTotalVolumeTicker = ws.Cells(i, 1).Value
+                End If
+
+                ' Move to the next row to post
+                rowCount = rowCount + 1
+
+                ' Reset variables for the next ticker
+                totalVolume = 0
+                openingPrice = 0
+                closingPrice = 0
+            Else
+                ' Accumulate total volume for the same ticker
+                totalVolume = totalVolume + ws.Cells(i, 7).Value
+
+                ' Opening price set for new ticker
+                If openingPrice = 0 Then
+                    openingPrice = ws.Cells(i, 3).Value
+                End If
+            End If
+        Next i
+
+        ' Print greatest % increase, decrease, total volume summary
+        ws.Cells(1, 16).Value = "Ticker"
+        ws.Cells(1, 17).Value = "Value"
+        ws.Cells(2, 15).Value = "Greatest % Increase"
+        ws.Cells(2, 16).Value = maxPercentIncreaseTicker
+        ws.Cells(2, 17).Value = Format(maxPercentIncrease, "0.00%")
+        ws.Cells(3, 15).Value = "Greatest % Decrease"
+        ws.Cells(3, 16).Value = maxPercentDecreaseTicker
+        ws.Cells(3, 17).Value = Format(maxPercentDecrease, "0.00%")
+        ws.Cells(4, 15).Value = "Greatest Total Volume"
+        ws.Cells(4, 16).Value = maxTotalVolumeTicker
+        ws.Cells(4, 17).Value = maxTotalVolume
+    Next ws
+End Sub
+
